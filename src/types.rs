@@ -50,24 +50,25 @@ impl ToSql<Geography, Pg> for GeogPoint {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[sql_type = "Geography"]
 pub struct LineString {
-    pub points: Vec<LineStringT<P>>,
+    pub points: Vec<GeogPoint>,
     pub srid: Option<i32>,
 }
 
-impl From<PolygonT> for Polygon {
-    fn from(p: PolygonT) -> Self {
-        let PolygonT { rings, srid } = p;
-        Self { rings, srid }
-    }
-}
-impl From<Polygon> for PolygonT {
-    fn from(p: Polygon) -> Self {
-        let Polygon { rings, srid } = p;
-        Self { rings, srid }
+impl From<LineStringT> for LineString {
+    fn from(p: LineStringT) -> Self {
+        let LineStringT { points, srid } = p;
+        Self { points, srid }
     }
 }
 
-impl FromSql<Geography, Pg> for Polygon {
+impl From<LineString> for LineStringT {
+    fn from(p: LineString) -> Self {
+        let LineString { points, srid } = p;
+        Self { points, srid }
+    }
+}
+
+impl FromSql<Geography, Pg> for LineString {
     fn from_sql(bytes: Option<&[u8]>) -> deserialize::Result<Self> {
         use postgis::ewkb::EwkbRead;
         use std::io::Cursor;
@@ -77,7 +78,7 @@ impl FromSql<Geography, Pg> for Polygon {
     }
 }
 
-impl ToSql<Geography, Pg> for Polygon {
+impl ToSql<Geography, Pg> for LineString {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
         use postgis::ewkb::{AsEwkbPoint, EwkbWrite};
         Point::from(*self).as_ewkb().write_ewkb(out)?;
@@ -89,7 +90,7 @@ impl ToSql<Geography, Pg> for Polygon {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[sql_type = "Geography"]
 pub struct Polygon {
-    pub rings: Vec<LineStringT<P>>,
+    pub rings: Vec<LineString>,
     pub srid: Option<i32>,
 }
 
@@ -128,7 +129,7 @@ impl ToSql<Geography, Pg> for Polygon {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[sql_type = "Geography"]
 pub struct MultiPolygon {
-    pub polygons: Vec<PolygonT>,
+    pub polygons: Vec<Polygon>,
     pub srid: Option<i32>,
 }
 
